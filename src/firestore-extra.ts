@@ -1,5 +1,5 @@
 import * as firebase from 'firebase/app';
-import { deepUpdate } from './deep-update';
+import { deepUpdate as _deepUpdate } from './deep-update';
 
 
 // ==============================================================
@@ -16,8 +16,6 @@ declare module 'firebase/app' {
     }
 }
 
-// todo deep object update (base on deep copy module code)
-//      update different & remove missing values
 
 
 // ==============================================================
@@ -34,13 +32,12 @@ function xBindData<T>(this: firebase.firestore.CollectionReference | firebase.fi
             else if (docChange.type === 'modified') {
                 let newDoc = {id: docChange.doc.id, data: docChange.doc.data() as T}; // Add more typings to remove `as` statement
                 if (docChange.oldIndex === docChange.newIndex) {
-                    let prevDoc = data.splice(docChange.oldIndex, 1); // remove from previous position
-                    newDoc = deepUpdate(prevDoc, newDoc); // partial deep update
-                    data.splice(docChange.newIndex, 0, newDoc); // add to new position
+                    // _deepUpdate(data[docChange.oldIndex], newDoc) // ANGULAR do NOT need deepUpdate when using trackBy
+                    data[docChange.oldIndex] = newDoc;
                 }
                 else {
-                    // TODO partial update basing on previous version
-                    data[docChange.oldIndex] = newDoc;
+                    data.splice(docChange.oldIndex, 1); // remove from previous position
+                    data.splice(docChange.newIndex, 0, newDoc); // add to new position
                 }
             }
             else if (docChange.type === 'removed') {
@@ -53,7 +50,7 @@ function xBindData<T>(this: firebase.firestore.CollectionReference | firebase.fi
 
 firebase.firestore.CollectionReference.prototype.xBindData = xBindData;
 firebase.firestore.Query.prototype.xBindData = xBindData;
- 
+
 // ==============================================================
 //    Stronger typings for firestore
 // ==============================================================
