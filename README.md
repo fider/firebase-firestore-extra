@@ -18,19 +18,19 @@ Should be also ok with Node.js.
 Compiled with TypeScript 3.6.3
 
 ```sh
-$ npm i -S @fider/firebase-firestore-extra
+$ npm i -S firebase-firestore-extra
 ```
 
 # Examples
 
 ## Some examples (you should be able to figure out everything on your own using typings and firestore documentation)
 ```js
-import { Doc, DocRef, ColRef, Query } from '@fider/firebase-firestore-extra';
+import { Doc, DocRef, ColRef, Query } from 'firebase-firestore-extra';
 import * as firebase from 'firebase';
 
 interface IData = Doc<{name: string, age: number}>
 
-// configure firebase... 
+// configure firebase...
 let db = fireStoreDb;
 
 // Of course await inside async function only
@@ -44,7 +44,7 @@ let myObject: IData = {} as any;
 let stop = docRef.xWatch(myObject, {otherOptions});
 // You can deduce other options from typings
 // Variable myObject will be synced with database document until stop() called
-stop(); 
+stop();
 
 let myArray: IData = {} as any;
 let stop = colRef.xWatch(myArray, {otherOptions});
