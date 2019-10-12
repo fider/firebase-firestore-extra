@@ -3,18 +3,18 @@ import * as firebase from 'firebase/app';
 
 interface Doc<T> {
     id: string;
-    data: T
+    data: T;
 }
 
 interface XWatchOptions<T> {
-    onError?: (error: Error)=>void,
-    snapListenOpts?: firebase.firestore.SnapshotListenOptions,
-    snapOpts?: firebase.firestore.SnapshotOptions
+    onError?: (error: Error) => void;
+    snapListenOpts?: firebase.firestore.SnapshotListenOptions;
+    snapOpts?: firebase.firestore.SnapshotOptions;
     hooks?: {
         afterAdded?: (doc: Doc<T>) => void,
         afterMofified?: (oldDoc: Doc<T>, newDoc: Doc<T>, oldIndex?: number, newIndex?: number) => void, // old/new index olny in arrays
         afterRemoved?: (removedDoc: Doc<T>) => void,
-    }
+    };
 }
 
 interface XGetOptions {
@@ -59,12 +59,12 @@ export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference, 's
 
 export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 'add' | 'doc' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
     xGet: (xOpts?: XGetOptions) => Promise< Array<Doc<T>> >;
-    xWatch: (data: Array< Doc<T> >, xOpts?: XWatchOptions<T>) => firebase.Unsubscribe; 
+    xWatch: (data: Array< Doc<T> >, xOpts?: XWatchOptions<T>) => firebase.Unsubscribe;
     add: (data: T) => Promise< DocRef<T> >;
     doc(documentPath?: string): DocRef<T>;
 
     // Typed queries
-    endAt(snapshot: DocSnap<T>): Query<T>;
+    endAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
     endAt(...fieldValues: any[]): Query<T>;
     endBefore(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
     endBefore(...fieldValues: any[]): Query<T>;
@@ -75,7 +75,7 @@ export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 
     startAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
     startAt(...fieldValues: any[]): Query<T>;
     where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): Query<T>;
-    
+
 }
 
 export interface Query<T> extends Omit<firebase.firestore.Query, 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
@@ -83,7 +83,7 @@ export interface Query<T> extends Omit<firebase.firestore.Query, 'endAt' | 'endB
     xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
 
     // Chained queries
-    endAt(snapshot: DocSnap<T>): Query<T>;
+    endAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
     endAt(...fieldValues: any[]): Query<T>;
     endBefore(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
     endBefore(...fieldValues: any[]): Query<T>;
@@ -97,21 +97,21 @@ export interface Query<T> extends Omit<firebase.firestore.Query, 'endAt' | 'endB
 
 }
 
-export interface DocSnap<T> extends firebase.firestore.DocumentSnapshot {
-    // TODO somewhere in future if I will find it usefull
-}
+// export interface DocSnap<T> extends firebase.firestore.DocumentSnapshot {
+//     // TODO somewhere in future if I will find it usefull
+// }
 
 
 // ==============================================================
 //    Firestore prototype augmentation  (implementation)
 // ==============================================================
-const empty = function() {};
+const empty = function() { /* empty function */ };
 
 async function xGetDocument<T>(
         this: firebase.firestore.DocumentReference,
         xOpts: XGetOptions = {}
             ): Promise< Doc<T|undefined> > {
-                
+
     const getOpts = xOpts.getOpts;
     const snapOpts = xOpts.snapOpts;
 
@@ -132,14 +132,14 @@ async function xGetCollection<T>(
         return {
             id: queryDocSnap.id,
             data: queryDocSnap.data(snapOpts) as T,
-        }
+        };
     });
 
     return docs;
 }
 
 function xWatchDocument<T>(
-        this: firebase.firestore.DocumentReference, 
+        this: firebase.firestore.DocumentReference,
         data: Doc<T|undefined>,
         xOpts: XWatchOptions<T> = {}
             ) {
@@ -152,13 +152,13 @@ function xWatchDocument<T>(
     const snapOpts = xOpts.snapOpts;
     const onError = xOpts.onError;
 
-    const hooks = xOpts.hooks || {}
+    const hooks = xOpts.hooks || {};
     let afterAdded    = hooks.afterAdded    || empty;
     let afterMofified = hooks.afterMofified || empty;
     let afterRemoved  = hooks.afterRemoved  || empty;
 
     let off = this.onSnapshot(snapListenOpts, (docSnap) => {
-        
+
         const newData = docSnap.data(snapOpts) as T | undefined;
         const oldData = data.data as T;
         const id = this.id;
@@ -177,7 +177,7 @@ function xWatchDocument<T>(
         else {
             // Modified
             data.data = newData;
-            afterMofified({id, data: oldData}, {id, data: newData as T})
+            afterMofified({id, data: oldData}, {id, data: newData as T});
         }
 
     }, onError);
@@ -185,8 +185,8 @@ function xWatchDocument<T>(
 }
 
 function xWatchCollection<T>(
-        this: firebase.firestore.CollectionReference | firebase.firestore.Query, 
-        data: Array<Doc<T>>, 
+        this: firebase.firestore.CollectionReference | firebase.firestore.Query,
+        data: Array<Doc<T>>,
         xOpts: XWatchOptions<T> = {}
         ) {
 
@@ -198,14 +198,14 @@ function xWatchCollection<T>(
     const snapListenOpts = xOpts.snapListenOpts || {};
     const snapOpts = xOpts.snapOpts;
 
-    const hooks = xOpts.hooks || {}
+    const hooks = xOpts.hooks || {};
     let afterAdded    = hooks.afterAdded    || empty;
     let afterMofified = hooks.afterMofified || empty;
     let afterRemoved  = hooks.afterRemoved  || empty;
 
     const off = this.onSnapshot(snapListenOpts, (querySnap: firebase.firestore.QuerySnapshot) => {
 
-        // TODO INCLUDE MULTIPLE CHANGES OF INDEXES AT ONCE - test offline !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+        // TODO INCLUDE MULTIPLE CHANGES OF INDEXES AT ONCE - test offline !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         querySnap.docChanges().forEach( (docChange: firebase.firestore.DocumentChange) => {
 
             const id = docChange.doc.id;

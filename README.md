@@ -9,6 +9,8 @@ Cool stuff that speed up your work with Cloud Firestore Database.
 If you want to contribute just create pull rquest.
 
 # Installation and requirements
+Tested with `"firebase": "7.2.0"` (firebase skd should be also installed with `npm i -S firebase`)
+
 Tested on front-end applications with Angular.
 
 Should be also ok with Node.js.
