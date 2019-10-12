@@ -1,5 +1,5 @@
 {
-  "name": "firebase-firestore-extra",
+  "name": "@fider/firebase-firestore-extra",
   "version": "1.0.0",
   "description": "Augmentations and typings for firebase/firestore",
   "main": "./lib/index.js",
@@ -14,13 +14,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "TODO-GIT-REPO-GIT+FORMAT"
+    "url": "https://github.com/fider/firebase-firestore-extra"
   },
   "keywords": [
-    "TODO-NPMJS-KEYWORD"
+    "firebase",
+    "firestore",
+    "extra"
   ],
-  "author": "TODO-AUTHOR",
-  "license": "TODO-LICENSE",
+  "author": "Wojciech Fiderek <wojciech.fiderek.dev@gmail.com>",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "24.0.15",
     "@types/node": "10.10.1",
@@ -33,7 +35,8 @@
     "typescript": "3.4.5"
   },
   "bugs": {
-    "url": "TODO-GIT-REPO-GIT+FORMAT/issues"
+    "url": "https://github.com/fider/firebase-firestore-extra/issues"
   },
-  "homepage": "TODO-GIT-REPO-GIT+FORMAT#readme"
+  "homepage": "https://github.com/fider/firebase-firestore-extra#readme",
+  "dependencies": {}
 }
