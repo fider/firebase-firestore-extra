@@ -19,6 +19,7 @@ interface XWatchOptions<T> {
     snapOpts?: firebase.firestore.SnapshotOptions;
     hooks?: {
         afterAdded?: (doc: Doc<T>) => void,
+        // TODO - consider remove providing old docs due to performance
         afterMofified?: (oldDoc: Doc<T>, newDoc: Doc<T>, oldIndex?: number, newIndex?: number) => void, // old/new index olny in arrays
         afterRemoved?: (removedDoc: Doc<T>) => void,
     };
@@ -221,15 +222,19 @@ function xWatchCollection<T>(
 
     const off = this.onSnapshot(snapListenOpts, (querySnap: firebase.firestore.QuerySnapshot) => {
 
-        let oldData = deepCopy(data);
+        // optimization
+        let oldData: Array<Doc<T>> = data;
+        if (afterRemoved !== empty) {
+            // In case if modification happens and index has changed indexes of other documents may changed
+            oldData = deepCopy(data);
+        }
 
-        // TODO INCLUDE MULTIPLE CHANGES OF INDEXES AT ONCE - test offline !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         querySnap.docChanges().forEach( (docChange: firebase.firestore.DocumentChange) => {
 
             const id = docChange.doc.id;
             const oldIndex = docChange.oldIndex;
             const newIndex = docChange.newIndex;
-            const oldDoc = oldData[oldIndex];
+            let   oldDoc = oldData[oldIndex];
             const newDoc = {id, data: docChange.doc.data(snapOpts) as T};
 
             if (docChange.type === 'added') {
@@ -237,6 +242,7 @@ function xWatchCollection<T>(
                 afterAdded(newDoc);
             }
             else if (docChange.type === 'modified') {
+
                 if (oldIndex === newIndex) {
                     data[oldIndex] = newDoc; // in-place update
                 }
@@ -247,7 +253,7 @@ function xWatchCollection<T>(
                 afterMofified(oldDoc, newDoc, oldIndex, newIndex);
             }
             else if (docChange.type === 'removed') {
-                data.splice(oldIndex, 1);
+                oldDoc = data.splice(oldIndex, 1)[0];
                 afterRemoved(oldDoc);
             }
         });
