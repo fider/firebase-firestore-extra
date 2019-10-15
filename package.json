@@ -4,8 +4,7 @@
   "description": "Augmentations and typings for firebase/firestore",
   "main": "./lib/index.js",
   "scripts": {
-    "build": "tsc  &&  npm run lint",
-    "build:clean": "npm run clean && npm run build",
+    "build": "npm run clean &&  npm run lint && tsc",
     "build:publish": "npm run clean && npm run lint && tsc --sourceMap false",
     "clean": "rimraf coverage lib",
     "lint": "tslint -p ./tsconfig.json",
@@ -39,5 +38,7 @@
     "url": "https://github.com/fider/firebase-firestore-extra/issues"
   },
   "homepage": "https://github.com/fider/firebase-firestore-extra#readme",
-  "dependencies": {}
+  "dependencies": {
+    "deepcopy": "^2.0.0"
+  }
 }

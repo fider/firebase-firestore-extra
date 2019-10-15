@@ -1,10 +1,17 @@
-import * as firebase from 'firebase/app';
+import * as firebase from 'firebase';
+const deepCopy = require('deepcopy');
 
 
-interface Doc<T> {
+
+export interface Doc<T> {
     id: string;
     data: T;
+    exists?: boolean;
 }
+
+
+export type Off = firebase.Unsubscribe;
+
 
 interface XWatchOptions<T> {
     onError?: (error: Error) => void;
@@ -28,7 +35,7 @@ interface XGetOptions {
 //    To get full usage of <T> support use DocRef<T>, ColRef<T>, Query<T>:
 //        let colRef: ColRef<YourType> = db.collection('colName') as ColRef<YourType>;
 // ==============================================================
-declare module 'firebase/app' {
+declare module 'firebase' {
     export namespace firestore {
         export interface DocumentReference {
             xGet: (xOpts?: XGetOptions) => Promise< Doc<any> >;
@@ -51,49 +58,50 @@ declare module 'firebase/app' {
 //        let colRef: ColRef<YourType> = db.collection('colName') as ColRef<YourType>;
 // ==============================================================
 export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference, 'set' | 'update'> {
-    xGet: (xOpts?: XGetOptions) => Promise< Doc<T> >;
-    xWatch: (data: Doc<T>, xOpts?: XWatchOptions<T>) => firebase.Unsubscribe;
+    xGet(xOpts?: XGetOptions): Promise< Doc<T> >;
+    xWatch(data: Doc<T>, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
     set(data: T, options?: firebase.firestore.SetOptions): Promise<void>;
-    update: ((data: Partial<T>) => Promise<void>) | ((field: keyof T | firebase.firestore.FieldPath, value: any, ...moreFieldsAndValues: any[]) => Promise<void>);
+    update(data: Partial<T>): Promise<void>;
+    update(field: keyof T | firebase.firestore.FieldPath, value: any, ...moreFieldsAndValues: any[]): Promise<void>;
 }
 
 export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 'add' | 'doc' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
-    xGet: (xOpts?: XGetOptions) => Promise< Array<Doc<T>> >;
-    xWatch: (data: Array< Doc<T> >, xOpts?: XWatchOptions<T>) => firebase.Unsubscribe;
-    add: (data: T) => Promise< DocRef<T> >;
+    xGet(xOpts?: XGetOptions): Promise< Array<Doc<T>> >;
+    xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
+    add(data: T): Promise< DocRef<T> >;
     doc(documentPath?: string): DocRef<T>;
 
     // Typed queries
-    endAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    endAt(...fieldValues: any[]): Query<T>;
-    endBefore(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    endBefore(...fieldValues: any[]): Query<T>;
-    limit(limit: number): Query<T>;
-    orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): Query<T>;
-    startAfter(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    startAfter(...fieldValues: any[]): Query<T>;
-    startAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    startAt(...fieldValues: any[]): Query<T>;
-    where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): Query<T>;
+    endAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endAt(...fieldValues: any[]): TQuery<T>;
+    endBefore(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endBefore(...fieldValues: any[]): TQuery<T>;
+    limit(limit: number): TQuery<T>;
+    orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
+    startAfter(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    startAfter(...fieldValues: any[]): TQuery<T>;
+    startAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    startAt(...fieldValues: any[]): TQuery<T>;
+    where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): TQuery<T>;
 
 }
 
-export interface Query<T> extends Omit<firebase.firestore.Query, 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
+export interface TQuery<T> extends Omit<firebase.firestore.Query, 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
     xGet(xOpts?: XGetOptions): Promise< Array<Doc<T>> >;
     xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
 
     // Chained queries
-    endAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    endAt(...fieldValues: any[]): Query<T>;
-    endBefore(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    endBefore(...fieldValues: any[]): Query<T>;
-    limit(limit: number): Query<T>;
-    orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): Query<T>;
-    startAfter(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    startAfter(...fieldValues: any[]): Query<T>;
-    startAt(snapshot: firebase.firestore.DocumentSnapshot): Query<T>;
-    startAt(...fieldValues: any[]): Query<T>;
-    where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): Query<T>;
+    endAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endAt(...fieldValues: any[]): TQuery<T>;
+    endBefore(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endBefore(...fieldValues: any[]): TQuery<T>;
+    limit(limit: number): TQuery<T>;
+    orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
+    startAfter(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    startAfter(...fieldValues: any[]): TQuery<T>;
+    startAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    startAt(...fieldValues: any[]): TQuery<T>;
+    where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): TQuery<T>;
 
 }
 
@@ -116,7 +124,11 @@ async function xGetDocument<T>(
     const snapOpts = xOpts.snapOpts;
 
     const docRef = await this.get(getOpts);
-    return {id: docRef.id, data: docRef.data(snapOpts) as T | undefined};
+    return {
+        id: docRef.id,
+        data: docRef.data(snapOpts) as T | undefined,
+        exists: docRef.exists
+    };
 }
 
 async function xGetCollection<T>(
@@ -132,6 +144,7 @@ async function xGetCollection<T>(
         return {
             id: queryDocSnap.id,
             data: queryDocSnap.data(snapOpts) as T,
+            exists: true
         };
     });
 
@@ -167,16 +180,19 @@ function xWatchDocument<T>(
             // Added
             data.id   = id;
             data.data = newData;
+            data.exists = true;
             afterAdded({id, data: newData});
         }
         else if (data.data && !newData) {
             // Removed
             data.data = newData;
+            data.exists = false;
             afterRemoved({id, data: oldData});
         }
         else {
             // Modified
             data.data = newData;
+            data.exists = true;
             afterMofified({id, data: oldData}, {id, data: newData as T});
         }
 
@@ -205,13 +221,15 @@ function xWatchCollection<T>(
 
     const off = this.onSnapshot(snapListenOpts, (querySnap: firebase.firestore.QuerySnapshot) => {
 
+        let oldData = deepCopy(data);
+
         // TODO INCLUDE MULTIPLE CHANGES OF INDEXES AT ONCE - test offline !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         querySnap.docChanges().forEach( (docChange: firebase.firestore.DocumentChange) => {
 
             const id = docChange.doc.id;
             const oldIndex = docChange.oldIndex;
             const newIndex = docChange.newIndex;
-            const oldDoc = {id, data: data[ oldIndex ].data};
+            const oldDoc = oldData[oldIndex];
             const newDoc = {id, data: docChange.doc.data(snapOpts) as T};
 
             if (docChange.type === 'added') {
@@ -242,6 +260,7 @@ function xWatchCollection<T>(
 //    Update prototype
 // ==============================================================
 
+
 firebase.firestore.DocumentReference.prototype.xGet   = xGetDocument;
 firebase.firestore.DocumentReference.prototype.xWatch = xWatchDocument;
 
@@ -250,3 +269,5 @@ firebase.firestore.CollectionReference.prototype.xWatch = xWatchCollection;
 
 firebase.firestore.Query.prototype.xGet = xGetCollection;
 firebase.firestore.Query.prototype.xWatch = xWatchCollection;
+
+export function doNotOptimizeMe() { /* Exporting it so module import will not be optimized out */}
