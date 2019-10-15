@@ -21,6 +21,17 @@ Compiled with TypeScript 3.6.3
 $ npm i -S firebase-firestore-extra
 ```
 
+Active augmentations in front-ent TypeScript app (when using plain JavaScript it is enough to `require('firebase-firestore-extra')` ):
+```js
+// Mandatory line, even if you are importing something using 'from' syntax
+// In case of Angular app put it in main.ts
+import 'firebase-firestore-extra';
+
+// Then import required types...
+import { DocRef } from 'firebase-firestore-extra';
+
+```
+
 # Examples
 
 ## Some examples (you should be able to figure out everything on your own using typings and firestore documentation)
