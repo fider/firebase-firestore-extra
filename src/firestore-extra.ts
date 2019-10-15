@@ -1,5 +1,5 @@
 import * as firebase from 'firebase';
-const deepCopy = require('deepcopy');
+// const deepCopy = require('deepcopy');
 
 
 
@@ -18,9 +18,8 @@ interface XWatchOptions<T> {
     snapListenOpts?: firebase.firestore.SnapshotListenOptions;
     snapOpts?: firebase.firestore.SnapshotOptions;
     hooks?: {
-        afterAdded?: (doc: Doc<T>) => void,
-        // TODO - consider remove providing old docs due to performance
-        afterMofified?: (oldDoc: Doc<T>, newDoc: Doc<T>, oldIndex?: number, newIndex?: number) => void, // old/new index olny in arrays
+        afterAdded?: (doc: Doc<T>, index?: number) => void,
+        afterMofified?: (newDoc: Doc<T>, oldIndex?: number, newIndex?: number) => void, // old/new index olny in arrays
         afterRemoved?: (removedDoc: Doc<T>) => void,
     };
 }
@@ -58,7 +57,7 @@ declare module 'firebase' {
 //    Stronger typings for firestore  (they allow you to use <T>)
 //        let colRef: ColRef<YourType> = db.collection('colName') as ColRef<YourType>;
 // ==============================================================
-export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference, 'set' | 'update'> {
+export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference,  'xGet' | 'xWatch' | 'set' | 'update' > {
     xGet(xOpts?: XGetOptions): Promise< Doc<T> >;
     xWatch(data: Doc<T>, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
     set(data: T, options?: firebase.firestore.SetOptions): Promise<void>;
@@ -66,7 +65,7 @@ export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference, 's
     update(field: keyof T | firebase.firestore.FieldPath, value: any, ...moreFieldsAndValues: any[]): Promise<void>;
 }
 
-export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 'add' | 'doc' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
+export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 'xGet' | 'xWatch' | 'add' | 'doc' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
     xGet(xOpts?: XGetOptions): Promise< Array<Doc<T>> >;
     xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
     add(data: T): Promise< DocRef<T> >;
@@ -87,7 +86,7 @@ export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 
 
 }
 
-export interface TQuery<T> extends Omit<firebase.firestore.Query, 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
+export interface TQuery<T> extends Omit<firebase.firestore.Query, 'xGet' | 'xWatch' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
     xGet(xOpts?: XGetOptions): Promise< Array<Doc<T>> >;
     xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
 
@@ -194,7 +193,8 @@ function xWatchDocument<T>(
             // Modified
             data.data = newData;
             data.exists = true;
-            afterMofified({id, data: oldData}, {id, data: newData as T});
+            // Old doc param removed due to performance when watching whole collection
+            afterMofified(/* {id, data: oldData} ,*/ {id, data: newData as T});
         }
 
     }, onError);
@@ -222,24 +222,26 @@ function xWatchCollection<T>(
 
     const off = this.onSnapshot(snapListenOpts, (querySnap: firebase.firestore.QuerySnapshot) => {
 
+
         // optimization
         let oldData: Array<Doc<T>> = data;
-        if (afterRemoved !== empty) {
-            // In case if modification happens and index has changed indexes of other documents may changed
-            oldData = deepCopy(data);
-        }
+        // Old doc param removed due to performance when watching whole collection
+        // if (afterRemoved !== empty) {
+        //     // In case if modification happens and index has changed indexes of other documents may changed
+        //     oldData = deepCopy(data);
+        // }
 
         querySnap.docChanges().forEach( (docChange: firebase.firestore.DocumentChange) => {
 
             const id = docChange.doc.id;
             const oldIndex = docChange.oldIndex;
             const newIndex = docChange.newIndex;
-            let   oldDoc = oldData[oldIndex];
+            // let   oldDoc = oldData[oldIndex];
             const newDoc = {id, data: docChange.doc.data(snapOpts) as T};
 
             if (docChange.type === 'added') {
                 data.splice(newIndex, 0, newDoc);
-                afterAdded(newDoc);
+                afterAdded(newDoc, newIndex);
             }
             else if (docChange.type === 'modified') {
 
@@ -250,10 +252,11 @@ function xWatchCollection<T>(
                     data.splice(oldIndex, 1); // remove from previous position
                     data.splice(newIndex, 0, newDoc); // add to new position
                 }
-                afterMofified(oldDoc, newDoc, oldIndex, newIndex);
+                // Old doc param removed due to performance when watching whole collection
+                afterMofified(/*oldDoc,*/ newDoc, oldIndex, newIndex);
             }
             else if (docChange.type === 'removed') {
-                oldDoc = data.splice(oldIndex, 1)[0];
+                let oldDoc = data.splice(oldIndex, 1)[0];
                 afterRemoved(oldDoc);
             }
         });
