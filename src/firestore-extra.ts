@@ -53,11 +53,16 @@ declare module 'firebase' {
 }
 
 
-// ==============================================================
+// =====================================================================================
 //    Stronger typings for firestore  (they allow you to use <T>)
 //        let colRef: ColRef<YourType> = db.collection('colName') as ColRef<YourType>;
-// ==============================================================
-export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference,  'xGet' | 'xWatch' | 'set' | 'update' > {
+// =====================================================================================
+
+// -----------------------------------------
+//    Most often used types
+// -----------------------------------------
+export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference,  'parent' | 'xGet' | 'xWatch' | 'set' | 'update' > {
+    readonly parent: ColRef<T>;
     xGet(xOpts?: XGetOptions): Promise< Doc<T> >;
     xWatch(data: Doc<T>, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
     set(data: T, options?: firebase.firestore.SetOptions): Promise<void>;
@@ -65,49 +70,153 @@ export interface DocRef<T> extends Omit<firebase.firestore.DocumentReference,  '
     update(field: keyof T | firebase.firestore.FieldPath, value: any, ...moreFieldsAndValues: any[]): Promise<void>;
 }
 
-export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 'xGet' | 'xWatch' | 'add' | 'doc' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
+export interface ColRef<T> extends Omit<firebase.firestore.CollectionReference, 'xGet' | 'xWatch' | 'add' | 'doc' | 'get' | 'isEqual' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
     xGet(xOpts?: XGetOptions): Promise< Array<Doc<T>> >;
     xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
     add(data: T): Promise< DocRef<T> >;
     doc(documentPath?: string): DocRef<T>;
+    get(options?: firebase.firestore.GetOptions): Promise< QuerySnap<T> >;
+    isEqual(other: ColRef<any>): boolean;
+
 
     // Typed queries
-    endAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endAt(snapshot: DocSnap<T>): TQuery<T>;
     endAt(...fieldValues: any[]): TQuery<T>;
-    endBefore(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endBefore(snapshot: DocSnap<T>): TQuery<T>;
     endBefore(...fieldValues: any[]): TQuery<T>;
     limit(limit: number): TQuery<T>;
-    orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
-    startAfter(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    orderBy(fieldPath: keyof T, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
+    // orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
+    startAfter(snapshot: DocSnap<T>): TQuery<T>;
     startAfter(...fieldValues: any[]): TQuery<T>;
-    startAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    startAt(snapshot: DocSnap<T>): TQuery<T>;
     startAt(...fieldValues: any[]): TQuery<T>;
     where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): TQuery<T>;
 
 }
 
-export interface TQuery<T> extends Omit<firebase.firestore.Query, 'xGet' | 'xWatch' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
+export interface TQuery<T> extends IOnSnapshot<T>, Omit<firebase.firestore.Query, 'onSnapshot' | 'xGet' | 'xWatch' | 'endAt' | 'endBefore' | 'limit' | 'orderBy' | 'startAfter' | 'startAt' | 'where'> {
     xGet(xOpts?: XGetOptions): Promise< Array<Doc<T>> >;
     xWatch(data: Array< Doc<T> >, xOpts?: XWatchOptions<T>): firebase.Unsubscribe;
 
     // Chained queries
-    endAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endAt(snapshot: DocSnap<T>): TQuery<T>;
     endAt(...fieldValues: any[]): TQuery<T>;
-    endBefore(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    endBefore(snapshot: DocSnap<T>): TQuery<T>;
     endBefore(...fieldValues: any[]): TQuery<T>;
     limit(limit: number): TQuery<T>;
-    orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
-    startAfter(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    orderBy(fieldPath: keyof T, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
+    // orderBy(fieldPath: string | firebase.firestore.FieldPath, directionStr?: firebase.firestore.OrderByDirection): TQuery<T>;
+    startAfter(snapshot: DocSnap<T>): TQuery<T>;
     startAfter(...fieldValues: any[]): TQuery<T>;
-    startAt(snapshot: firebase.firestore.DocumentSnapshot): TQuery<T>;
+    startAt(snapshot: DocSnap<T>): TQuery<T>;
     startAt(...fieldValues: any[]): TQuery<T>;
     where(fieldPath: keyof T | firebase.firestore.FieldPath, opStr: firebase.firestore.WhereFilterOp, value: any): TQuery<T>;
 
+
 }
 
-// export interface DocSnap<T> extends firebase.firestore.DocumentSnapshot {
-//     // TODO somewhere in future if I will find it usefull
+// -----------------------------------------
+//    Internal types for advanced usage
+// -----------------------------------------
+export interface DocSnap<T> extends Omit<firebase.firestore.DocumentSnapshot, 'data' | 'get'> {
+    data(options: firebase.firestore.SnapshotOptions): T | undefined;
+    get<K extends keyof T>(fieldPath: K | firebase.firestore.FieldPath, options?: firebase.firestore.SnapshotOptions): T[K];
+}
+
+export interface QueryDocSnap<T> extends Omit<DocSnap<T>, 'exists' | 'data'> {
+    readonly exists: true; // always true (In DocSnap it can be false)
+    data(options: firebase.firestore.SnapshotOptions): T; // never return undefined
+}
+
+export interface IOnSnapshot<T> {
+    onSnapshot(
+        observer: {
+            next?: (snapshot: QuerySnap<T>) => void;
+            error?: (error: Error) => void;
+            complete?: () => void;
+        }
+    ): () => void;
+
+    onSnapshot(
+        options: firebase.firestore.SnapshotListenOptions,
+        observer: {
+            next?: (snapshot: QuerySnap<T>) => void;
+            error?: (error: Error) => void;
+            complete?: () => void;
+        }
+    ): () => void;
+
+    onSnapshot(
+        onNext: (snapshot: QuerySnap<T>) => void,
+        onError?: (error: Error) => void,
+        onCompletion?: () => void
+    ): () => void;
+
+    onSnapshot(
+        options: firebase.firestore.SnapshotListenOptions,
+        onNext: (snapshot: QuerySnap<T>) => void,
+        onError?: (error: Error) => void,
+        onCompletion?: () => void
+    ): () => void;
+}
+
+
+export interface QuerySnap<T> extends Omit<firebase.firestore.QuerySnapshot, 'docs' | 'docChanges' | 'forEach'> {
+    docs: QueryDocSnap<T>[];
+    docChanges(options?: firebase.firestore.SnapshotListenOptions): DocChange<T>[];
+    forEach(callback: (QueryDocSnap<T>), thisArg?: any): void;
+}
+
+export interface DocChange<T> extends Omit<firebase.firestore.DocumentChange, 'doc'> {
+    doc: QueryDocSnap<T>;
+}
+
+
+
+// TODO
+// MOVING SUBCOLLECTIONS IS AVAILABLE ONLY IN NODE (not for web)
+// Implement this library verions for nodejs   (npm install @google-cloud/firestore)
+
+
+// export interface MoveOptions {
+//     moveSubcollections?: boolean;
 // }
+
+// const defaultMoveOptions: Required<MoveOptions> = {
+//     moveSubcollections: false
+// };
+
+// TODO implement moveTo
+async function xMoveTo<T>(docRef: DocRef<T>, targetCollection: ColRef<T>, setOptions: firebase.firestore.SetOptions = {}/*, moveOptions?: MoveOptions*/) {
+
+    let previousCollection = docRef.parent;
+
+    if (previousCollection.isEqual(targetCollection)) {
+        console.warn(`documentReference.moveTo(targetCollection) documentReference already in targetCollection. Returning this warning so you can avoid bugs in your app.`);
+        return;
+    }
+
+    let docData = await docRef.xGet();
+    if ( ! docData.exists) {
+        throw new Error(`documentReference.moveTo(targetCollection) docId="${docRef.id}" targetCollectionId="${targetCollection.id}". Document not exists in database.`);
+    }
+
+
+    await targetCollection.doc(docRef.id).set( docData.data, setOptions );
+    // Longer execution than Promise.all but error message is more clear
+    try {
+        await docRef.delete();
+    }
+    catch (err) {
+        err.message = `documentReference.moveTo(targetCollection) docId="${docRef.id}" targetCollectionId="${targetCollection.id}`
+            + ` - document with id "${docRef.id}" addedd to collection "${targetCollection.id}" but it was not removed from previous collection "${previousCollection.id}".`
+            + ` - ! MOST PROBABLY you should remove it manually from old collection if it still extists there.`
+            + `Details: ${err.message}`;
+        throw err;
+    }
+}
+
 
 
 // ==============================================================
@@ -220,11 +329,13 @@ function xWatchCollection<T>(
     let afterMofified = hooks.afterMofified || empty;
     let afterRemoved  = hooks.afterRemoved  || empty;
 
+    let isFirstRun = true;
+
     const off = this.onSnapshot(snapListenOpts, (querySnap: firebase.firestore.QuerySnapshot) => {
 
 
         // optimization
-        let oldData: Array<Doc<T>> = data;
+        // let oldData: Array<Doc<T>> = data;
         // Old doc param removed due to performance when watching whole collection
         // if (afterRemoved !== empty) {
         //     // In case if modification happens and index has changed indexes of other documents may changed
@@ -240,7 +351,28 @@ function xWatchCollection<T>(
             const newDoc = {id, data: docChange.doc.data(snapOpts) as T};
 
             if (docChange.type === 'added') {
-                data.splice(newIndex, 0, newDoc);
+
+                if (isFirstRun) {
+                    // Do not duplicate data in case of watch/unwatch/watch scenario
+                    let docMatch = data.filter( doc => doc.id === id )[0];
+                    // indexof
+                    if (docMatch) {
+                        docMatch.data = newDoc.data;
+                        let prevIndex = data.indexOf(docMatch);
+                        if (prevIndex !== newIndex) {
+                            let shift = newIndex > oldIndex ? -1 : 0;
+                            data.splice(prevIndex, 1);
+                            data.splice(newIndex + shift, 0, docMatch); // -1 because original array is shorter now
+                        }
+                    }
+                    else {
+                        // just add
+                        data.splice(newIndex, 0, newDoc);
+                    }
+                }
+                else {
+                    data.splice(newIndex, 0, newDoc);
+                }
                 afterAdded(newDoc, newIndex);
             }
             else if (docChange.type === 'modified') {
@@ -249,8 +381,9 @@ function xWatchCollection<T>(
                     data[oldIndex] = newDoc; // in-place update
                 }
                 else {
+                    let shift = newIndex > oldIndex ? -1 : 0;
                     data.splice(oldIndex, 1); // remove from previous position
-                    data.splice(newIndex, 0, newDoc); // add to new position
+                    data.splice(newIndex + shift, 0, newDoc); // add to new position
                 }
                 // Old doc param removed due to performance when watching whole collection
                 afterMofified(/*oldDoc,*/ newDoc, oldIndex, newIndex);
@@ -260,6 +393,9 @@ function xWatchCollection<T>(
                 afterRemoved(oldDoc);
             }
         });
+
+        isFirstRun = false;
+
     }, onError);
     return off;
 }
