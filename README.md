@@ -9,11 +9,9 @@ Cool stuff that speed up your work with Cloud Firestore Database.
 If you want to contribute just create pull rquest.
 
 # Installation and requirements
+Currently web sdk only (not yet for Node.js. Expect separate package).
+
 Tested with `"firebase": "7.2.0"` (firebase skd should be also installed with `npm i -S firebase`)
-
-Tested on front-end applications with Angular.
-
-Should be also ok with Node.js.
 
 Compiled with TypeScript 3.6.3
 
@@ -21,13 +19,13 @@ Compiled with TypeScript 3.6.3
 $ npm i -S firebase-firestore-extra
 ```
 
-Active augmentations in front-ent TypeScript app (when using plain JavaScript it is enough to `require('firebase-firestore-extra')` ):
+Active augmentations in TypeScript app (when using plain JavaScript it is enough to `require('firebase-firestore-extra')` ):
 ```js
 // Mandatory line, even if you are importing something using 'from' syntax
 // In case of Angular app put it in main.ts
 import 'firebase-firestore-extra';
 
-// Then import required types...
+// Then import required types, even in the same file as above import...
 import { DocRef } from 'firebase-firestore-extra';
 
 ```
