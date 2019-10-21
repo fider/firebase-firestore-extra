@@ -1,7 +1,7 @@
 {
     "defaultSeverity": "error",
     "extends": [
-        "tslint:recommended"
+
     ],
     "jsRules": {},
     "rules": {
@@ -16,7 +16,7 @@
         "ordered-imports": false,
         "variable-name": false,
         "member-access": [true, "no-public"],
-        "one-line": [true, "check-catch", "check-finally", "check-open-brace", "check-whitespace"],
+        "one-line": [true, "check-open-brace", "check-whitespace"],
         "max-line-length": false,
         "trailing-comma": false,
         "eofline": false,

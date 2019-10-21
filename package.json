@@ -1,11 +1,10 @@
 {
   "name": "firebase-firestore-extra",
-  "version": "1.0.5",
+  "version": "1.1.1",
   "description": "Augmentations and typings for firebase/firestore",
   "main": "./lib/firestore-extra.js",
   "scripts": {
-    "build": "npm run clean && tsc",
-    "build:clean": "npm run clean && npm run build",
+    "build": "npm run clean &&  npm run lint && tsc",
     "build:publish": "npm run clean && npm run lint && tsc --sourceMap false",
     "clean": "rimraf coverage lib",
     "lint": "tslint -p ./tsconfig.json",
@@ -39,5 +38,6 @@
     "url": "https://github.com/fider/firebase-firestore-extra/issues"
   },
   "homepage": "https://github.com/fider/firebase-firestore-extra#readme",
-  "dependencies": {}
+  "dependencies": {
+  }
 }
