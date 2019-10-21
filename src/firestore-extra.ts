@@ -1,4 +1,4 @@
-import * as firebase from 'firebase/app';
+import * as firebase from 'firebase';
 
 
 interface Doc<T> {
@@ -28,7 +28,7 @@ interface XGetOptions {
 //    To get full usage of <T> support use DocRef<T>, ColRef<T>, Query<T>:
 //        let colRef: ColRef<YourType> = db.collection('colName') as ColRef<YourType>;
 // ==============================================================
-declare module 'firebase/app' {
+declare module 'firebase' {
     export namespace firestore {
         export interface DocumentReference {
             xGet: (xOpts?: XGetOptions) => Promise< Doc<any> >;
